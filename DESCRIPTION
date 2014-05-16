@@ -1,0 +1,15 @@
+Package: networktools
+Version: 0.100
+Date: 2014-05-15
+Title: Network analysis tools
+Author: Kasper Welbers & Wouter van Atteveldt
+Maintainer: Kasper Welbers <kasperwelbers@gmail.com>
+Depends:
+    slam,
+    Matrix,
+    igraph
+Description: Several convenient functions for making networks. Particularly
+    concerning communication and content similarity
+License: MIT
+URL: http://github.com/kasperwelbers/network-tools
+Roxygen: list(wrap = FALSE)
