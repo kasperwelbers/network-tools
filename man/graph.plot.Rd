@@ -10,7 +10,7 @@ graph.plot(g, min.edge = NULL, max.edge = NULL, delete.vertices = NULL,
 \arguments{
 \item{g}{A graph object in the \code{\link{igraph}} format}
 
-\item{min.edge.value}{Numerical scalar. Edges with a lower similarity will be deleted (note that 'similarity' attribute of the edge is used, not the weight attribute)}
+\item{min.edge.value}{Numerical scalar. Edges with a lower weight will be deleted}
 
 \item{max.edge.value}{Like min.edge.value, but for the max value}
 

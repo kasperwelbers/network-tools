@@ -3,7 +3,8 @@
 \alias{previous.authors.graph}
 \title{Create a graph from conversation data}
 \usage{
-previous.authors.graph(conversation, author, order.nr, lookback, direction)
+previous.authors.graph(conversation, author, order.nr, lookback = 1,
+  direction = "directed.up", once.per.conversation = F)
 }
 \arguments{
 \item{conversation.id}{A vector representing the conversation authors were engaged in (e.g. a thread, meeting)}
@@ -15,6 +16,8 @@ previous.authors.graph(conversation, author, order.nr, lookback, direction)
 \item{lookback}{The number of previous author with whom a tie with an author should be drawn}
 
 \item{direction}{A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors.}
+
+\item{once.per.conversation}{Logical. If TRUE, max one tie between two unique authors will be counted per conversation, even if an author communicated within the given distance multiple times within the conversation.}
 }
 \value{
 A graph object in the \code{\link{igraph}} format

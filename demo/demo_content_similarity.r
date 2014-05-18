@@ -7,7 +7,10 @@ load('demo/parliamentary_proceedings.rdata')
 dim(document.topic.matrix) # A sparse matrix of documents X topics (in this case a sample of the results from a topic model (LDA) over 73300 speech acts, with 200 topics)
 dim(meta) # meta data for the documents in document.topic.matrix. 
 
-g = content.similarity.graph(document.topic.matrix, vertex.grouping.vars=list(party=meta$party, year=format(meta$date, '%Y')), similarity.measure='correlation')
+g = content.similarity.graph(document.topic.matrix, 
+                             vertex.grouping.vars=list(party=meta$party, 
+                                                       year=format(meta$date, '%Y')), 
+                             similarity.measure='correlation')
 
 g = graph.color.vertices(g, V(g)$party) # color vertices by party
 V(g)$label = as.character(V(g)$year) # use year as vertex label

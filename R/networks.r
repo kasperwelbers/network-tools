@@ -53,7 +53,7 @@ matrix.rowsimilarities <- function(mat, similarity.measure, output.as='matrix'){
 #' @return An adjacency matrix
 #' @export
 matrix.coincidence.count <- function(mat){
-  mat@x[mat@x>0] = 1
+  mat[which(mat > 0)] = 1
   crossprod(mat) 
 }
 
@@ -65,7 +65,7 @@ matrix.coincidence.count <- function(mat){
 #' @return An adjacency matrix
 #' @export
 matrix.overlap.jacard <- function(mat){
-  mat@x[mat@x>0] = 1
+  mat[which(mat > 0)] = 1
   output = crossprod(mat) / colSums(mat)
 }
 
@@ -173,14 +173,14 @@ content.similarity.graph <- function(m, vertex.grouping.vars, similarity.measure
 #' 
 #' @param g A graph object in the \code{\link{igraph}} format
 #' @return A graph object in the \code{\link{igraph}} format
-#' @export
 default.graph.attributes <- function(g){  
   g$layout = layout.fruchterman.reingold
   V(g)$size = log(V(g)$values_sum)*2
   V(g)$label = as.character(1:length(V(g)))
   V(g)$label.cex = V(g)$size / 15
   V(g)$label.color = 'black'
-  E(g)$weigth = E(g)$width = E(g)$similarity*10
+  E(g)$weight = E(g)$similarity
+  E(g)$width = E(g)$weight*10
   g
 }
 
@@ -217,7 +217,7 @@ graph.color.vertices <- function(g, attribute, pallete=NULL){
 #' A wrapper for plotting graphs in the \code{\link{igraph}} format that incorporates the functions to delete edges and vertices
 #' 
 #' @param g A graph object in the \code{\link{igraph}} format
-#' @param min.edge.value Numerical scalar. Edges with a lower similarity will be deleted (note that 'similarity' attribute of the edge is used, not the weight attribute)
+#' @param min.edge.value Numerical scalar. Edges with a lower weight will be deleted
 #' @param max.edge.value Like min.edge.value, but for the max value
 #' @param delete.vertices Either a logical vector (TRUE/FALSE) with TRUE meaning that a vertex will be deleted, or indices for vertices that will be deleted
 #' @param select.vertices Same as delete.vertices, but inversed
@@ -227,8 +227,8 @@ graph.color.vertices <- function(g, attribute, pallete=NULL){
 #' @return if return.graph is TRUE, A graph object in the \code{\link{igraph}} format
 #' @export
 graph.plot <- function(g, min.edge=NULL, max.edge=NULL, delete.vertices=NULL, select.vertices=NULL, min.degree=NULL, use.tkplot=FALSE, return.graph=FALSE){ 
-  if(!is.null(min.edge)) g=delete.edges(g, which(E(g)$similarity < min.edge))
-  if(!is.null(max.edge)) g=delete.edges(g, which(E(g)$similarity > max.edge))
+  if(!is.null(min.edge)) g=delete.edges(g, which(E(g)$weight < min.edge))
+  if(!is.null(max.edge)) g=delete.edges(g, which(E(g)$weight > max.edge))
   if(!is.null(delete.vertices)){
     if(class(delete.vertices) == 'logical') delete.vertices = which(delete.vertices)
     g=delete.vertices(g, delete.vertices)
@@ -276,19 +276,22 @@ splitstr.to.rows <- function(x, split_by=';', id=NULL, ...){
 #'   
 #' @param conversation.id A vector representing the conversation authors were engaged in (e.g. a thread, meeting)
 #' @param author A vector with unique author names/ids
-#' @param order.nr Optional. A vector representing the order in which authors communicated within a conversation. 
-#' @param order.lookback Requires an order.nr vector. If value is 'first', a tie will be drawn between each author with the first author of a converstation. If value is a (non-negative) numerical scalar (x), ties are drawn between authors with the previous x authors. For example, if value is 1, ties are drawn between an author and the previous author. If value is 2, between an author and the previous 2 authors. etc.  
-#' @param direction A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors. 
-#' @return A data.frame with the columns id, order and substring
+#' @return A graph object in the \code{\link{igraph}} format
 #' @export
-conversation.graph.create <- function(conversation, author, order.nr=NULL, order.lookback=NULL, direction='undirected'){  
-  if(!is.null(order.nr) & !is.null(order.lookback)){
-    if(order.lookback == 'first') g = first.author.graph(conversation, author, order.nr, direction)
-    if(class(order.lookback) %in% c('numeric', 'integer')) g = previous.authors.graph(conversation, author, order.nr, order.lookback, direction)
-  } else{
-    if(!is.null(order.nr)) warning('order.nr is given, but order.lookback is NULL. Order will be ignored')
-    g = matrix.rowsimilarities(cast.sparse.matrix(author, conversation), similarity.measure='coincidence_count', output.as='graph') 
-  }
+author.coincidence.graph <- function(conversation, author, similarity.measure='coincidence_count'){  
+  m = cast.sparse.matrix(author, conversation)
+  g = matrix.rowsimilarities(m, similarity.measure=similarity.measure, output.as='graph') 
+  g = add.author.participation.meta(g, conversation, author)
+  g
+}
+
+add.author.participation.meta <- function(g, conversation, author){
+  conauth = data.frame(conversation, author)
+  n.conversation = data.frame(table(unique(conauth)$author))
+  n.messages = data.frame(table(conauth$author))
+  V(g)$author = V(g)$name
+  V(g)$n.conversations = n.conversation[match(V(g)$name, n.conversation[,1]),2]
+  V(g)$n.messages = n.messages[match(V(g)$name, n.messages[,1]),2]
   g
 }
 
@@ -300,21 +303,18 @@ conversation.graph.create <- function(conversation, author, order.nr=NULL, order
 #' @param author A vector with unique author names/ids
 #' @param order.nr Optional. A vector representing the order in which authors communicated within a conversation. 
 #' @param direction A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors. 
+#' @param once.per.conversation Logical. If TRUE, count only the number of conversations in which a first-author <-> later-author coincidence occurs. It is then ignored how many times the later author participated in the conversation. If FALSE, the number of participation times is counted.
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
-first.author.graph <- function(conversation, author, order.nr, direction){
+first.author.graph <- function(conversation, author, order.nr, direction='directed.up', once.per.conversation=TRUE){
   index = unique(author)
   author = match(author, unique(author))
-  first_author = author[match(apply(cbind(conversation, 1), 1, list), apply(cbind(conversation, order.nr), 1, list))]
-  if(direction == 'downward') xy = cbind(x=first_author, y=author) else xy = cbind(x=author, y=first_author) 
-  xy = xy[!is.na(xy[,2]),]
-  m = spMatrix(nrow=length(index), ncol=length(index), i=xy[,1], j=xy[,2], rep(1, nrow(xy)))
+  m = ties.per.message(conversation, author, order.nr, 1) 
+  m = count.ties(m, conversation, author, once.per.conversation)
   rownames(m) = colnames(m) = index
-  if(direction == 'undirected') {
-    m = forceSymmetric(m, uplo='U') + forceSymmetric(m, uplo='L')
-    g = graph.adjacency(m, mode='undirected', weighted=TRUE, diag=FALSE)
-  }
-  if(direction %in% c('directed.up','directed.down')) g = graph.adjacency(m, mode='directed', weighted=TRUE, diag=FALSE)
+  
+  g = authormatrix.to.graph(m, direction)
+  g = add.author.participation.meta(g, conversation, index[author])
   g
 }
 
@@ -327,26 +327,53 @@ first.author.graph <- function(conversation, author, order.nr, direction){
 #' @param order.nr Optional. A vector representing the order in which authors communicated within a conversation. 
 #' @param lookback The number of previous author with whom a tie with an author should be drawn
 #' @param direction A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors. 
+#' @param once.per.conversation Logical. If TRUE, max one tie between two unique authors will be counted per conversation, even if an author communicated within the given distance multiple times within the conversation.
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
-previous.authors.graph <- function(conversation, author, order.nr, lookback, direction){
+previous.authors.graph <- function(conversation, author, order.nr, lookback=1, direction='directed.up', once.per.conversation=F){
   index = unique(author)
   author = match(author, unique(author))
-  for(lb in 1:lookback){
-    previous_author = author[match(apply(cbind(conversation, order.nr-lb), 1, list), apply(cbind(conversation,order.nr), 1, list))]
-    xy = cbind(x=author, y=previous_author)
-    xy = xy[!is.na(xy[,2]),]
-    if(is.null(nrow(xy))) next
-    if(lb == 1) m = spMatrix(nrow=length(index), ncol=length(index), i=xy[,1], j=xy[,2], rep(1, nrow(xy)))
-    if(lb > 1) m = m + spMatrix(nrow=length(index), ncol=length(index), i=xy[,1], j=xy[,2], rep(1, nrow(xy)))
+  id = 1:length(author)
+  for(lb in 1:lookback) {
+    order.nr.Y = order.nr - lb
+    if(lb == 1) m = ties.per.message(conversation, author, order.nr, order.nr.Y) 
+    if(lb > 1) m = m + ties.per.message(conversation, author, order.nr, order.nr.Y) 
   }
+  m = count.ties(m, conversation, author, once.per.conversation)
   rownames(m) = colnames(m) = index
+  
+  g = authormatrix.to.graph(m, direction)
+  g = add.author.participation.meta(g, conversation, index[author])
+  g
+}
+
+ties.per.message <- function(conversation, author, order.nr.X, order.nr.Y){
+  nauthors = length(unique(author))
+  id = 1:length(author)
+  previous_author = author[match(apply(cbind(conversation, order.nr.Y), 1, list), apply(cbind(conversation,order.nr.X), 1, list))]
+  xy = cbind(id=id, y=previous_author)
+  xy = xy[!is.na(xy[,2]),]
+  if(is.null(nrow(xy))) next
+  spMatrix(nrow=max(id), ncol=nauthors, i=xy[,1], j=xy[,2], rep(1, nrow(xy))) 
+}
+
+count.ties <- function(m, conversation, author, once.per.conversation=T){
+  m[which(m > 0)] = 1 # count max 1 tie for each message.  
+  if(once.per.conversation == TRUE) {
+    m = matrix.aggregate(m, list(conversation=conversation, author=author))
+    m$matrix[which(m$matrix > 0)] = 1
+    m = matrix.aggregate(m$matrix, list(author=m$vars$author))$matrix
+  } else m = matrix.aggregate(m, list(author=author))$matrix
+  m
+}
+
+authormatrix.to.graph <- function(m, direction){
   if(direction == 'undirected') {
     m = forceSymmetric(m, uplo='U') + forceSymmetric(m, uplo='L')
     g = graph.adjacency(m, mode='undirected', weighted=TRUE, diag=FALSE)
   }
-  if(direction %in% c('directed.up','directed.down')) g = graph.adjacency(m, mode='directed', weighted=TRUE, diag=FALSE)
+  if(direction == 'directed.up') g = graph.adjacency(m, mode='directed', weighted=TRUE, diag=FALSE)
+  if(direction == 'directed.down') g = graph.adjacency(t(m), mode='directed', weighted=TRUE, diag=FALSE)
+  E(g)$conversation = E(g)$width = E(g)$weight
   g
 }
-
-?graph.adjacency

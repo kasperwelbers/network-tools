@@ -3,7 +3,8 @@
 \alias{first.author.graph}
 \title{Create a graph from conversation data}
 \usage{
-first.author.graph(conversation, author, order.nr, direction)
+first.author.graph(conversation, author, order.nr, direction = "directed.up",
+  once.per.conversation = TRUE)
 }
 \arguments{
 \item{conversation.id}{A vector representing the conversation authors were engaged in (e.g. a thread, meeting)}
@@ -13,6 +14,8 @@ first.author.graph(conversation, author, order.nr, direction)
 \item{order.nr}{Optional. A vector representing the order in which authors communicated within a conversation.}
 
 \item{direction}{A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors.}
+
+\item{once.per.conversation}{Logical. If TRUE, count only the number of conversations in which a first-author <-> later-author coincidence occurs. It is then ignored how many times the later author participated in the conversation. If FALSE, the number of participation times is counted.}
 }
 \value{
 A graph object in the \code{\link{igraph}} format
