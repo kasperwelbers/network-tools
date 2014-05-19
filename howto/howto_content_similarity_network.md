@@ -64,7 +64,7 @@ head(meta)
 
 The `content.similarity.graph` function has 2 required arguments. `m` is the matrix giving the content characteristics per document. `vertex.grouping.vars` is a named list containing the meta veriables that are used to group the documents. The function returns a graph in the `igraph` format. 
 
-Notable optional arguments are `similarity.measure' and `min.similarity`. With `similarity.measure` alternative methods to calculate the similarity between documents can be chosen. With `min.similarity` a threshold can be given for the edges/ties in the graph.
+Notable optional arguments are `similarity.measure` and `min.similarity`. With `similarity.measure` alternative methods to calculate the similarity between documents can be chosen. With `min.similarity` a threshold can be given for the edges/ties in the graph.
 
 
 ```r
@@ -89,9 +89,9 @@ g = graph.color.vertices(g, V(g)$party)  # color vertices by party
 ```
 
 ```
-##   attribute        color
-## 1       VVD    steelblue
-## 2       CDA lightskyblue
+##   attribute  color
+## 1       VVD violet
+## 2       CDA   grey
 ```
 
 
@@ -160,17 +160,17 @@ g = graph.color.vertices(g, V(g)$journal)  # color vertices by journal
 ```
 
 ```
-##                                       attribute             color
-## 1                        COMMUNICATION RESEARCH     lightseagreen
-## 2                      JOURNAL OF COMMUNICATION       lightyellow
-## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS              grey
-## 4                        PERSONAL RELATIONSHIPS         lightcyan
-## 5                  HUMAN COMMUNICATION RESEARCH          darkcyan
-## 6                           NEW MEDIA & SOCIETY mediumspringgreen
-## 7                            JAVNOST-THE PUBLIC         burlywood
-## 8                       MEDIA CULTURE & SOCIETY   mediumslateblue
-## 9                      COMMUNICATION MONOGRAPHS          seashell
-## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY         olivedrab
+##                                       attribute          color
+## 1                        COMMUNICATION RESEARCH        hotpink
+## 2                      JOURNAL OF COMMUNICATION      lightcyan
+## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS         orange
+## 4                        PERSONAL RELATIONSHIPS     darksalmon
+## 5                  HUMAN COMMUNICATION RESEARCH     powderblue
+## 6                           NEW MEDIA & SOCIETY  darkslategrey
+## 7                            JAVNOST-THE PUBLIC      violetred
+## 8                       MEDIA CULTURE & SOCIETY    navajowhite
+## 9                      COMMUNICATION MONOGRAPHS lightslateblue
+## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY      chocolate
 ```
 
 ```r
