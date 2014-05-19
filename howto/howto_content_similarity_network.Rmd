@@ -1,3 +1,8 @@
+```{r, include=FALSE}
+opts_chunk$set(fig.path = "figures_content_similarity_network/")
+```
+
+
 Content similarity networks
 ==========================
 

@@ -1,3 +1,8 @@
+```{r, include=FALSE}
+opts_chunk$set(fig.path = "figures_author_and_content_networks/")
+```
+
+
 Combining author networks and content similarity networks
 ==========================
 

@@ -1,3 +1,7 @@
+```{r, include=FALSE}
+opts_chunk$set(fig.path = "figures_author_network/")
+```
+
 Author networks
 ==========================
 

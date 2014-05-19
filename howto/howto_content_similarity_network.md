@@ -1,3 +1,7 @@
+
+
+
+
 Content similarity networks
 ==========================
 
@@ -85,9 +89,9 @@ g = graph.color.vertices(g, V(g)$party)  # color vertices by party
 ```
 
 ```
-##   attribute      color
-## 1       VVD   seashell
-## 2       CDA lightgreen
+##   attribute        color
+## 1       VVD    steelblue
+## 2       CDA lightskyblue
 ```
 
 
@@ -106,7 +110,7 @@ Now we can visualize the network with the `plot` function.
 plot(g)
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+![plot of chunk unnamed-chunk-6](figures_content_similarity_network/unnamed-chunk-6.png) 
 
 
 From this network we can see that the strongest similarities are between the two parties within the same year, and that there are much weaker similarities between years, even within the same party.
@@ -118,7 +122,7 @@ Often it is usefull to filter a graph, such as deleting edges below a certain va
 graph.plot(g, min.edge = 0.1)
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
+![plot of chunk unnamed-chunk-7](figures_content_similarity_network/unnamed-chunk-7.png) 
 
 
 Finally, one might prefer to visualize/analyze the graph in other software, such as gephi. The `write.graph` function in the `igraph` package offers various ways to write graphs to specific formats.
@@ -156,17 +160,17 @@ g = graph.color.vertices(g, V(g)$journal)  # color vertices by journal
 ```
 
 ```
-##                                       attribute          color
-## 1                        COMMUNICATION RESEARCH      palegreen
-## 2                      JOURNAL OF COMMUNICATION blanchedalmond
-## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS  darkslategray
-## 4                        PERSONAL RELATIONSHIPS      slateblue
-## 5                  HUMAN COMMUNICATION RESEARCH      gainsboro
-## 6                           NEW MEDIA & SOCIETY          coral
-## 7                            JAVNOST-THE PUBLIC         salmon
-## 8                       MEDIA CULTURE & SOCIETY     darkorchid
-## 9                      COMMUNICATION MONOGRAPHS lightslategray
-## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY       darkgrey
+##                                       attribute             color
+## 1                        COMMUNICATION RESEARCH     lightseagreen
+## 2                      JOURNAL OF COMMUNICATION       lightyellow
+## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS              grey
+## 4                        PERSONAL RELATIONSHIPS         lightcyan
+## 5                  HUMAN COMMUNICATION RESEARCH          darkcyan
+## 6                           NEW MEDIA & SOCIETY mediumspringgreen
+## 7                            JAVNOST-THE PUBLIC         burlywood
+## 8                       MEDIA CULTURE & SOCIETY   mediumslateblue
+## 9                      COMMUNICATION MONOGRAPHS          seashell
+## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY         olivedrab
 ```
 
 ```r
@@ -182,17 +186,17 @@ In this example, we have used separate nodes for each journal X period combinati
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2001/2003")
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-81.png) 
+![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-91.png) 
 
 ```r
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2004/2006")
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-82.png) 
+![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-92.png) 
 
 ```r
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2007/2009")
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-83.png) 
+![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-93.png) 
 

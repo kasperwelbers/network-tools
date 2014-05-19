@@ -1,3 +1,6 @@
+
+
+
 Author networks
 ==========================
 
@@ -82,7 +85,7 @@ The output is a graph in the igraph format.
 plot(g, vertex.size = V(g)$n.documents * 2, vertex.label = "", edge.color = "black")
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+![plot of chunk unnamed-chunk-6](figures_author_network/unnamed-chunk-6.png) 
 
 
 Conversation networks
@@ -125,7 +128,7 @@ g = author.coincidence.graph(meta$meeting, meta$author, "cosine")  # To what ext
 plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "")
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
+![plot of chunk unnamed-chunk-8](figures_author_network/unnamed-chunk-8.png) 
 
 
 The second way to make the conversation network does take order into account. With `previous.authors.graph` we can draw ties between authors who communicated within a given distance of speech acts. The `lookback` argument indicates the max distance between the speech act of an author and the previous authors. For example, if lookback is 1, ties are drawn for every time an author directly responded to another author. Note that this also allows a direction to be given to ties/edges (from author to previous author(s) or the other way around). 
@@ -138,7 +141,7 @@ plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "", edge.width = sq
     edge.arrow.size = sqrt(E(g)$width)/4)
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+![plot of chunk unnamed-chunk-9](figures_author_network/unnamed-chunk-9.png) 
 
 
 The third way to make the conversation network is by only drawing ties between the first author and all next authors in the conversation. This works similarly to `previous.authors.graph`, but requires no `lookback` argument.
@@ -150,5 +153,5 @@ plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "", edge.width = sq
     edge.arrow.size = sqrt(E(g)$width)/4)
 ```
 
-![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9.png) 
+![plot of chunk unnamed-chunk-10](figures_author_network/unnamed-chunk-10.png) 
 

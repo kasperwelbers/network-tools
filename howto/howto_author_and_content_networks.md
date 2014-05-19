@@ -1,3 +1,7 @@
+
+
+
+
 Combining author networks and content similarity networks
 ==========================
 
@@ -128,14 +132,14 @@ g = graph.color.vertices(g, as.character(sc$membership))
 ```
 
 ```
-##   attribute           color
-## 1         7       limegreen
-## 2         1          maroon
-## 3         3 mediumvioletred
-## 4         5     lightyellow
-## 5         2       gainsboro
-## 6         4    midnightblue
-## 7         6       slateblue
+##   attribute       color
+## 1         3     hotpink
+## 2         5    seagreen
+## 3         2   aliceblue
+## 4         6        grey
+## 5         1 lightsalmon
+## 6         4        navy
+## 7         7        cyan
 ```
 
 
@@ -147,7 +151,7 @@ E(g)$weight = E(g)$width = E(g)$author.ties/3
 graph.plot(g, min.edge = 1)
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
+![plot of chunk unnamed-chunk-8](figures_author_and_content_networks/unnamed-chunk-8.png) 
 
 
 
