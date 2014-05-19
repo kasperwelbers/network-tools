@@ -25,4 +25,15 @@ A graph object in the \code{\link{igraph}} format
 \description{
 Create a graph from conversation data, in which ties are drawn between authors and the authors that communicated within a given distance (lookback) before them.
 }
+\examples{
+d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
+             author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+              order.nr=c(1,2,3,4,5,6,1,2,3,4))
+g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=1) # how many times did author.X communicate directly after author.Y?
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=1, once.per.conversation=TRUE) # in how many conversations did author.X communicate directly after author.Y?
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=2) # how many times did author.X communicate within two messages after author.Y?
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+}
 

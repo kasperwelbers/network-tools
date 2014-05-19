@@ -18,7 +18,6 @@ V(g)$label = as.character(V(g)$year) # use year as vertex label
 graph.plot(g)
 graph.plot(g, min.edge=0.1)
 
-
 ###############################
 ###############################
 
@@ -38,4 +37,3 @@ V(g)$label = as.character(V(g)$journal) # use journal as vertex name
 graph.plot(g, min.edge=0.3, select.vertices=V(g)$period == '2001/2003')
 graph.plot(g, min.edge=0.3, select.vertices=V(g)$period == '2004/2006')
 graph.plot(g, min.edge=0.3, select.vertices=V(g)$period == '2007/2009')
-

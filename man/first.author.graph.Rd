@@ -23,4 +23,17 @@ A graph object in the \code{\link{igraph}} format
 \description{
 Create a graph from conversation data, in which ties are drawn between each authors in the conversation and the first author.
 }
+\examples{
+d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
+              author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+              order.nr=c(1,2,3,4,5,6,1,2,3,4))
+g = first.author.graph(d$conversation, d$author, d$order.nr) # in how many conversations initiated by author.Y did author.X communicate?
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+g = first.author.graph(d$conversation, d$author, d$order.nr, once.per.conversation=FALSE) # how many times did author.X communicate in a conversation initiated by author.Y?
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
+g = first.author.graph(d$conversation, d$author, d$order.nr, direction='undirected') # drop direction author.X and author.Y
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+g = first.author.graph(d$conversation, d$author, d$order.nr, direction='directed.down') # switch direction
+plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+}
 

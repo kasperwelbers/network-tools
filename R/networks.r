@@ -257,7 +257,7 @@ graph.plot <- function(g, min.edge=NULL, max.edge=NULL, delete.vertices=NULL, se
 #' @param ... additional parameters to be passed to the strsplit function
 #' @return A data.frame with the columns id, order and substring
 #' @export
-splitstr.to.rows <- function(x, split_by=';', id=NULL, ...){
+strsplit.to.rows <- function(x, id=NULL, split_by=';', ...){
   if(is.null(id)) id = 1:length(x)
   tmp = strsplit(as.character(x), split_by, ...)
   nMax = max(sapply(tmp, length))
@@ -278,19 +278,29 @@ splitstr.to.rows <- function(x, split_by=';', id=NULL, ...){
 #' @param author A vector with unique author names/ids
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
-author.coincidence.graph <- function(conversation, author, similarity.measure='coincidence_count'){  
-  m = cast.sparse.matrix(author, conversation)
+#' @examples
+#' d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
+#'               author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+#'               order.nr=c(1,2,3,4,5,6,1,2,3,4))
+#' g = author.coincidence.graph(d$conversation, d$author) # In how many conversations did author.X and author.Y communicate?
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25) 
+#' g = author.coincidence.graph(d$conversation, d$author, 'overlap_jacard') # Similar to default (coincidence_count) but with direction (by dividing coincidence by number of conversations author participated in)
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
+#' g = author.coincidence.graph(d$conversation, d$author, 'cosine') # Cosine can be used to also take into account how many times each author participated within conversations
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
+author.coincidence.graph <- function(participation.id, author, similarity.measure='coincidence_count'){  
+  m = cast.sparse.matrix(author, participation.id)
   g = matrix.rowsimilarities(m, similarity.measure=similarity.measure, output.as='graph') 
-  g = add.author.participation.meta(g, conversation, author)
+  g = add.author.participation.meta(g, participation.id, author)
   g
 }
 
-add.author.participation.meta <- function(g, conversation, author){
-  conauth = data.frame(conversation, author)
-  n.conversation = data.frame(table(unique(conauth)$author))
+add.author.participation.meta <- function(g, participation.id, author){
+  conauth = data.frame(participation.id, author)
+  n.document = data.frame(table(unique(conauth)$author))
   n.messages = data.frame(table(conauth$author))
   V(g)$author = V(g)$name
-  V(g)$n.conversations = n.conversation[match(V(g)$name, n.conversation[,1]),2]
+  V(g)$n.documents = n.document[match(V(g)$name, n.document[,1]),2]
   V(g)$n.messages = n.messages[match(V(g)$name, n.messages[,1]),2]
   g
 }
@@ -306,11 +316,23 @@ add.author.participation.meta <- function(g, conversation, author){
 #' @param once.per.conversation Logical. If TRUE, count only the number of conversations in which a first-author <-> later-author coincidence occurs. It is then ignored how many times the later author participated in the conversation. If FALSE, the number of participation times is counted.
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
+#' @examples
+#' d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
+#'               author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+#'               order.nr=c(1,2,3,4,5,6,1,2,3,4))
+#' g = first.author.graph(d$conversation, d$author, d$order.nr) # in how many conversations initiated by author.Y did author.X communicate?
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+#' g = first.author.graph(d$conversation, d$author, d$order.nr, once.per.conversation=FALSE) # how many times did author.X communicate in a conversation initiated by author.Y?
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
+#' g = first.author.graph(d$conversation, d$author, d$order.nr, direction='undirected') # drop direction author.X and author.Y
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+#' g = first.author.graph(d$conversation, d$author, d$order.nr, direction='directed.down') # switch direction
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
 first.author.graph <- function(conversation, author, order.nr, direction='directed.up', once.per.conversation=TRUE){
   index = unique(author)
   author = match(author, unique(author))
   m = ties.per.message(conversation, author, order.nr, 1) 
-  m = count.ties(m, conversation, author, once.per.conversation)
+  m = aggregate.ties(m, conversation, author, once.per.conversation)
   rownames(m) = colnames(m) = index
   
   g = authormatrix.to.graph(m, direction)
@@ -327,9 +349,19 @@ first.author.graph <- function(conversation, author, order.nr, direction='direct
 #' @param order.nr Optional. A vector representing the order in which authors communicated within a conversation. 
 #' @param lookback The number of previous author with whom a tie with an author should be drawn
 #' @param direction A character string, indicating the direction of the ties. If 'undirected', ties between authors go both ways. If 'directed.up', ties are directed from author to previous authors (only if order is given). if 'directed.down', ties are directed from author to later authors. 
-#' @param once.per.conversation Logical. If TRUE, max one tie between two unique authors will be counted per conversation, even if an author communicated within the given distance multiple times within the conversation.
+#' @param once.per.conversation Logical. If TRUE, max one tie between two unique authors will be counted per conversation, even if an author communicated within the given distance multiple times within the conversation. 
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
+#' @examples
+#' d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
+#'              author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+#'               order.nr=c(1,2,3,4,5,6,1,2,3,4))
+#' g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=1) # how many times did author.X communicate directly after author.Y? 
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+#' g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=1, once.per.conversation=TRUE) # in how many conversations did author.X communicate directly after author.Y?
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
+#' g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=2) # how many times did author.X communicate within two messages after author.Y? 
+#' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.documents*25)
 previous.authors.graph <- function(conversation, author, order.nr, lookback=1, direction='directed.up', once.per.conversation=F){
   index = unique(author)
   author = match(author, unique(author))
@@ -339,7 +371,7 @@ previous.authors.graph <- function(conversation, author, order.nr, lookback=1, d
     if(lb == 1) m = ties.per.message(conversation, author, order.nr, order.nr.Y) 
     if(lb > 1) m = m + ties.per.message(conversation, author, order.nr, order.nr.Y) 
   }
-  m = count.ties(m, conversation, author, once.per.conversation)
+  m = aggregate.ties(m, conversation, author, once.per.conversation)
   rownames(m) = colnames(m) = index
   
   g = authormatrix.to.graph(m, direction)
@@ -357,7 +389,7 @@ ties.per.message <- function(conversation, author, order.nr.X, order.nr.Y){
   spMatrix(nrow=max(id), ncol=nauthors, i=xy[,1], j=xy[,2], rep(1, nrow(xy))) 
 }
 
-count.ties <- function(m, conversation, author, once.per.conversation=T){
+aggregate.ties <- function(m, conversation, author, once.per.conversation=T){
   m[which(m > 0)] = 1 # count max 1 tie for each message.  
   if(once.per.conversation == TRUE) {
     m = matrix.aggregate(m, list(conversation=conversation, author=author))
@@ -374,6 +406,6 @@ authormatrix.to.graph <- function(m, direction){
   }
   if(direction == 'directed.up') g = graph.adjacency(m, mode='directed', weighted=TRUE, diag=FALSE)
   if(direction == 'directed.down') g = graph.adjacency(t(m), mode='directed', weighted=TRUE, diag=FALSE)
-  E(g)$conversation = E(g)$width = E(g)$weight
+  E(g)$author.ties = E(g)$width = E(g)$weight
   g
 }

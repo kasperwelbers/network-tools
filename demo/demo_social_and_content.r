@@ -17,7 +17,7 @@ list.vertex.attributes(g)
 list.edge.attributes(g)
 
 E(g)$conversation[is.na(E(g)$conversation)] = 0
-summary(lm(E(g)$similarity ~ E(g)$conversation))
+summary(lm(E(g)$similarity ~ E(g)$documents))
 
 sc = spinglass.community(g, E(g)$similarity)
 g = graph.color.vertices(g, as.character(sc$membership))

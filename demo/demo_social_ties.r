@@ -1,7 +1,7 @@
 d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
                author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
                order.nr=c(1,2,3,4,5,6,1,2,3,4))
-d 
+d
 
 g = author.coincidence.graph(d$conversation, d$author) # In how many conversations did author.X and author.Y communicate?
 plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.conversations*25) 
@@ -27,5 +27,5 @@ plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.conversations*25)
 g = previous.authors.graph(d$conversation, d$author, d$order.nr, lookback=2) # how many times did author.X communicate within two messages after author.Y? 
 plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.conversations*25)
 
-
+?write.graph
 

@@ -1,0 +1,70 @@
+Combining author networks and content similarity networks
+==========================
+
+The similarity of the content of documents can be expressed as graphs/networks, and communicative ties between authors of documents can be expresssed as social networks. By combining both networks, we can study how `what authors communicate about` and `who they communicate with` relate, and how this changes over time.
+
+In this howto we demonstrate how to combine both networks for this type of analysis.
+
+As demo data we use speech acts in Dutch parliamentary proceedings by two parties (VVD and CDA) from 2003 till 2005 (samples of 100 proceedings per year)
+
+```{r, message=F}
+library(networktools)
+
+load('../demo/parliamentary_proceedings.rdata')
+meta$author = paste(meta$name, meta$party)
+head(meta)
+```
+
+The steps for creating the content similarity network and the author network are described in `howto_author_network.md` and `hotwo_content_similarity_network.md`. Here we use the `previous.authors.graph` and `content.similarity.graph`. 
+
+```{r, message=F}
+g_soc = previous.authors.graph(meta$meeting, meta$author, meta$pagenr, lookback=10, direction='undirected', once.per.conversation=F) 
+g_con = content.similarity.graph(document.topic.matrix, vertex.grouping.vars=list(author=meta$author, party=meta$party), similarity.measure='correlation')
+```
+
+g_soc is the author (social network) graph, based on which authors participaged in a discussion within a distance of 10 speech acts. 
+g_con is the content similarity graph that indicates how similar the topics of author communications are.
+
+In both networks the nodex/vertices represent authors (politicans). Both graphs are in the igraph format. Thanks to igraph, we can easily merge both networks based on the vertex names. For this, we first explicitly set the names of the vertices (V(g)$name) based on the vertex attribute called 'author'.
+
+```{r, message=F}
+V(g_soc)$name = as.character(V(g_soc)$author)
+V(g_con)$name = as.character(V(g_con)$author)
+V(g_soc)$name %in% V(g_con)$name # see whether nodes in both networks match
+```
+
+We can now use the graph.union() function, from the igraph package, to merge both networks based on vertex names
+
+```{r, message=F}
+g = graph.union(g_soc, g_con, byname=TRUE)
+list.vertex.attributes(g)
+list.edge.attributes(g)
+```
+
+The merged graph contains the attributes of both graphs. Common attributes (e.g., weight, width) are doubled. In the edge.attributes we both see the ties for the author network (author.ties) and for the content similarity network (similarity)
+
+Now we can analyze their similarities. For a simple indication, we can check the correlation between the tie weights
+
+```{r, message=F}
+E(g)$author.ties[is.na(E(g)$author.ties)] = 0 # first change the weight of missing author network ties to zero 
+cor.test(E(g)$similarity, E(g)$author.ties)
+```
+
+There is a clear relation between the author network (who communicate with each other) and the content similarity network (how similar are authors in what they say). This is according to expectation, since people engaged in a conversation are likely to be talking about the same things.
+
+For a visual approximation we can also color the nodes based on communities. For this we first use a community detection alghoritm to find communities of nodes based on their content similarity, and use the community membership to color nodes.
+
+```{r, message=F}
+sc = spinglass.community(g, E(g)$similarity)
+g = graph.color.vertices(g, as.character(sc$membership))
+```
+
+Now we set the weight and width of the ties of the network to the author.ties, and plot the network
+
+```{r, message=F}
+E(g)$weight = E(g)$width = E(g)$author.ties / 3
+graph.plot(g, min.edge=1)
+```
+
+
+
