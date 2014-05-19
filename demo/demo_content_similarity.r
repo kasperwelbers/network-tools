@@ -11,6 +11,9 @@ g = content.similarity.graph(document.topic.matrix,
                              vertex.grouping.vars=list(party=meta$party, 
                                                        year=format(meta$date, '%Y')), 
                              similarity.measure='correlation')
+list.vertex.attributes(g)
+list.edge.attributes(g)
+
 
 g = graph.color.vertices(g, V(g)$party) # color vertices by party
 V(g)$label = as.character(V(g)$year) # use year as vertex label

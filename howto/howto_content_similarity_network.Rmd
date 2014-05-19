@@ -32,7 +32,7 @@ head(meta)
 
 The `content.similarity.graph` function has 2 required arguments. `m` is the matrix giving the content characteristics per document. `vertex.grouping.vars` is a named list containing the meta veriables that are used to group the documents. The function returns a graph in the `igraph` format. 
 
-Notable optional arguments are `similarity.measure' and `min.similarity`. With `similarity.measure` alternative methods to calculate the similarity between documents can be chosen. With `min.similarity` a threshold can be given for the edges/ties in the graph.
+Notable optional arguments are `similarity.measure` and `min.similarity`. With `similarity.measure` alternative methods to calculate the similarity between documents can be chosen. With `min.similarity` a threshold can be given for the edges/ties in the graph.
 
 ```{r, message=F}
 g = content.similarity.graph(m=document.topic.matrix, 
