@@ -9,7 +9,7 @@ The similarity of the content of documents can be expressed as graphs/networks. 
 
 In this howto we show several functions that can be used to create such similarity networks. The input consists of two objects: 
 
-- A matrix in which rows are documents, and columns are content characteristics (e.g., words, issues, topics). This can for instance be a DocumentTermMatrix (from the tm package), codings based on content-analysis, or the output of a topic model. Since this type of matrix is often very sparse, the functions in the package were specifically designed to handle sparse matrices efficiently.
+- A matrix in which rows are documents, and columns are content characteristics (e.g., words, issues, topics). This can for instance be a DocumentTermMatrix (from the tm package), codings based on content-analysis, or based on the output of a topic model. Since this type of matrix is often very sparse, the functions in the package were specifically designed to handle sparse matrices efficiently.
 - A data.frame (or vector) with document meta, such as document-id, author, source and date
 
 Creating the graph
