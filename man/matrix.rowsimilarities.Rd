@@ -3,7 +3,8 @@
 \alias{matrix.rowsimilarities}
 \title{Calculates the similarity between rows of a matrix}
 \usage{
-matrix.rowsimilarities(mat, similarity.measure, output.as = "matrix")
+matrix.rowsimilarities(mat, similarity.measure, output.as = "matrix",
+  min.similarity = NULL, decimals = 3)
 }
 \arguments{
 \item{matrix}{A matrix object, which can be a sparse matrix.}

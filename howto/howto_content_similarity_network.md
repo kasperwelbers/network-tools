@@ -89,9 +89,9 @@ g = graph.color.vertices(g, V(g)$party)  # color vertices by party
 ```
 
 ```
-##   attribute  color
-## 1       VVD violet
-## 2       CDA   grey
+##   attribute    color
+## 1       VVD    brown
+## 2       CDA darkgrey
 ```
 
 
@@ -161,16 +161,16 @@ g = graph.color.vertices(g, V(g)$journal)  # color vertices by journal
 
 ```
 ##                                       attribute          color
-## 1                        COMMUNICATION RESEARCH        hotpink
-## 2                      JOURNAL OF COMMUNICATION      lightcyan
-## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS         orange
-## 4                        PERSONAL RELATIONSHIPS     darksalmon
-## 5                  HUMAN COMMUNICATION RESEARCH     powderblue
-## 6                           NEW MEDIA & SOCIETY  darkslategrey
-## 7                            JAVNOST-THE PUBLIC      violetred
-## 8                       MEDIA CULTURE & SOCIETY    navajowhite
-## 9                      COMMUNICATION MONOGRAPHS lightslateblue
-## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY      chocolate
+## 1                        COMMUNICATION RESEARCH         purple
+## 2                      JOURNAL OF COMMUNICATION    navajowhite
+## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS      violetred
+## 4                        PERSONAL RELATIONSHIPS      turquoise
+## 5                  HUMAN COMMUNICATION RESEARCH      slategrey
+## 6                           NEW MEDIA & SOCIETY          azure
+## 7                            JAVNOST-THE PUBLIC darkolivegreen
+## 8                       MEDIA CULTURE & SOCIETY   mediumorchid
+## 9                      COMMUNICATION MONOGRAPHS          black
+## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY            red
 ```
 
 ```r

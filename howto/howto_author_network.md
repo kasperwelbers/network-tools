@@ -82,7 +82,7 @@ The output is a graph in the igraph format.
 
 
 ```r
-plot(g, vertex.size = V(g)$n.documents * 2, vertex.label = "", edge.color = "black")
+plot(g, vertex.size = V(g)$n.domain * 2, vertex.label = "", edge.color = "black")
 ```
 
 ![plot of chunk unnamed-chunk-6](figures_author_network/unnamed-chunk-6.png) 
@@ -125,7 +125,7 @@ We present three functions to make a conversation network. The first is the same
 
 ```r
 g = author.coincidence.graph(meta$meeting, meta$author, "cosine")  # To what extent did politicians participate in the same conversations?
-plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "")
+plot(g, vertex.size = sqrt(V(g)$n.domain), vertex.label = "")
 ```
 
 ![plot of chunk unnamed-chunk-8](figures_author_network/unnamed-chunk-8.png) 
@@ -137,7 +137,7 @@ The second way to make the conversation network does take order into account. Wi
 ```r
 g = previous.authors.graph(meta$meeting, meta$author, meta$speech_act, lookback = 1, 
     direction = "directed.up")
-plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "", edge.width = sqrt(E(g)$width), 
+plot(g, vertex.size = sqrt(V(g)$n.domain), vertex.label = "", edge.width = sqrt(E(g)$width), 
     edge.arrow.size = sqrt(E(g)$width)/4)
 ```
 
@@ -149,7 +149,7 @@ The third way to make the conversation network is by only drawing ties between t
 
 ```r
 g = first.author.graph(meta$meeting, meta$author, meta$speech_act, direction = "directed.up")
-plot(g, vertex.size = sqrt(V(g)$n.documents), vertex.label = "", edge.width = sqrt(E(g)$width), 
+plot(g, vertex.size = sqrt(V(g)$n.domain), vertex.label = "", edge.width = sqrt(E(g)$width), 
     edge.arrow.size = sqrt(E(g)$width)/4)
 ```
 

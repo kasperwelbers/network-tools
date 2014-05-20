@@ -81,7 +81,7 @@ list.vertex.attributes(g)
 ```
 
 ```
-##  [1] "author_1"    "author_2"    "n.documents" "n.messages"  "party"      
+##  [1] "author_1"    "author_2"    "n.domain"    "n.messages"  "party"      
 ##  [6] "n"           "values_sum"  "size"        "label"       "label.cex"  
 ## [11] "label.color" "name"
 ```
@@ -132,14 +132,15 @@ g = graph.color.vertices(g, as.character(sc$membership))
 ```
 
 ```
-##   attribute       color
-## 1         3     hotpink
-## 2         5    seagreen
-## 3         2   aliceblue
-## 4         6        grey
-## 5         1 lightsalmon
-## 6         4        navy
-## 7         7        cyan
+##   attribute          color
+## 1         6 cornflowerblue
+## 2         8         sienna
+## 3         5     chartreuse
+## 4         7    greenyellow
+## 5         1       seashell
+## 6         3  darkslategray
+## 7         2      steelblue
+## 8         4     dodgerblue
 ```
 
 

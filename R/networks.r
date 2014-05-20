@@ -12,10 +12,15 @@
 #' @export
 cast.sparse.matrix <- function(rows, columns, values=NULL) {
   if(is.null(values)) values = rep(1, length(rows))
-  unit_index = unique(rows)
-  char_index = unique(columns)
+  d = data.frame(rows=rows, columns=columns, values=values)
+  if(nrow(d) > nrow(unique(d[,c('rows','columns')]))){
+    message('(Duplicate row-column matches occured. Values of duplicates are added up)')
+    d = aggregate(values ~ rows + columns, d, FUN='sum')
+  }
+  unit_index = unique(d$rows)
+  char_index = unique(d$columns)
   sm = spMatrix(nrow=length(unit_index), ncol=length(char_index),
-                match(rows, unit_index), match(columns, char_index), values)
+                match(d$rows, unit_index), match(d$columns, char_index), d$values)
   rownames(sm) = unit_index
   colnames(sm) = char_index
   sm
@@ -31,12 +36,15 @@ cast.sparse.matrix <- function(rows, columns, values=NULL) {
 #' @param output A character string indicating whether output should be a 'matrix' or a 'graph'. The graph is directed if assymetrical similarity measures are used ('conditional_probability' or 'overlap_jacard') 
 #' @return An adjacency matrix or graph object 
 #' @export
-matrix.rowsimilarities <- function(mat, similarity.measure, output.as='matrix'){
+matrix.rowsimilarities <- function(mat, similarity.measure, output.as='matrix', min.similarity=NULL, decimals=3){
   if(similarity.measure=='correlation') output = matrix.correlation(t(mat))
   if(similarity.measure=='cosine') output = matrix.cosine(t(mat))
   if(similarity.measure=='conditional_probability') output=matrix.conprob(t(mat))
   if(similarity.measure=='coincidence_count') output=matrix.coincidence.count(t(mat))
   if(similarity.measure=='overlap_jacard') output=matrix.overlap.jacard(t(mat))
+  
+  if(!is.null(min.similarity)) output[which(output < min.similarity)] = 0
+  mat = round(mat, decimals)
   if(output.as == 'graph') {
     if(similarity.measure %in% c('overlap_jacard','conditional_probability')) edge.type = 'directed' else edge.type = 'undirected'
     colnames(output) = rownames(output) = rownames(mat)
@@ -134,7 +142,6 @@ matrix.aggregate <- function(mat, grouping.vars, FUN='sum'){
   list(matrix=mat, vars=grouping.vars)
 }
 
-
 #' Create a content similarity graph
 #' 
 #' Makes a document similarity graph in the \code{\link{igraph}} format, based on a matrix in which rows are documents, and columns are content characteristics (e.g., terms, issues, topics). 
@@ -144,27 +151,33 @@ matrix.aggregate <- function(mat, grouping.vars, FUN='sum'){
 #' @param m A (sparse) matrix where rows are documents (e.g., news articles, forum posts) and columns are content characteristics (e.g., terms, topics). Values represent the presence of content characteristics within documents. Examples are: a \code{\link{DocumentTermMatrix}} or the transposed $document_sums (topics by documents matrix) created with \code{\link{lda.collapsed.gibbs.sampler}}. 
 #' @param vertex.grouping.vars A data.frame or list with named vectors representing vertex characteristics. Each unique combination of characteristics will be considered a vertex. In the graph object these characteristics are stored as vertex attributes.
 #' @param similarity.measure A character string giving a method for computing similarity. Options are: 'correlation', 'cosine','conditional_probability','overlap_count' and 'overlap_jacard'. 
-#' @param topicscores.as.vertexmeta Can be used to include the topic values per node per topic. if 'all', all topics will be included. Can also be a numeric vector to select specific topics.
 #' @param min.similarity A numeric scalar representing the threshold for similarities. All ties with a value below min.similarity will be deleted. Can be used to reduce the size of large graphs with many weak ties. 
+#' @param content.totals.as.vertexmeta Can be used to include the sum values per node per content characteristic. if 'all', all content characteristics will be included. Can also be a numeric vector to select specific content characteristics. The attribute names for content characteristics are C followed by the number (C1, C2, etc)
+#' @param content.totals.relative Logical. If content.totals.as.vertexmeta is used, use relative attention for content characteristic
 #' @return A graph object in the \code{\link{igraph}} format
 #' @export
-content.similarity.graph <- function(m, vertex.grouping.vars, similarity.measure='cosine', topicscores.as.vertexmeta=NULL, min.similarity=NULL){
-  m = Matrix(m, sparse=T)
+content.similarity.graph <- function(m, vertex.grouping.vars, similarity.measure='cosine', min.similarity=NULL, content.totals.as.vertexmeta=NULL, content.totals.relative=T){
   matlist = matrix.aggregate(m, vertex.grouping.vars)
-  g = matrix.rowsimilarities(matlist$matrix, similarity.measure, output='graph')
+  g = matrix.rowsimilarities(matlist$matrix, similarity.measure, output='graph', min.similarity)
   
-  if(!is.null(min.similarity)) g = delete.edges(g, which(E(g)$weight < min.similarity))
+  #if(!is.null(min.similarity)) g = delete.edges(g, which(E(g)$weight < min.similarity))
   E(g)$similarity = E(g)$weight
   
   matlist$vars$values_sum = rowSums(matlist$matrix) 
-  if(!is.null(topicscores.as.vertexmeta)) {
-    colnames(matlist$matrix) = paste('Topic:', 1:ncol(matlist$matrix))
-    if(topicscores.as.vertexmeta== 'all') matlist$vars = cbind(matlist$vars, as.matrix(matlist$matrix))
-    if(class(topicscores.as.vertexmeta) == 'numeric') matlist$vars = cbind(matlist$vars, matlist$matrix[,topicscores.as.vertexmeta, drop=F])
-  }
+  if(!is.null(content.totals.as.vertexmeta)) matlist$vars = cbind(matlist$vars, get.content.totals(matlist$matrix, content.totals.as.vertexmeta, content.totals.relative))
+ 
   vertex.attributes(g) = as.list(matlist$vars)
   g = default.graph.attributes(g)
   g
+}
+
+get.content.totals <- function(mat, content.totals.as.vertexmeta, content.totals.relative){
+  mat = as.matrix(mat)
+  colnames(mat) = paste('C', 1:ncol(mat),sep='')
+  if(content.totals.relative==T) mat = mat / rowSums(mat)
+  if(class(content.totals.as.vertexmeta) %in% c('integer','numeric')) mat = mat[,content.totals.as.vertexmeta, drop=F]
+  if(content.totals.as.vertexmeta[1] == 'all') mat = mat
+  mat
 }
 
 #' Sets basic default values for content.similarity.graph
@@ -205,9 +218,10 @@ graph.color.vertices <- function(g, attribute, pallete=NULL){
     print(pallete)
   }
   if(class(attribute) %in% c('numeric','integer')) {
-    attribute = attribute
-    pallete = colorRampPalette(c("white","red"))(max(attribute))
-    V(g)$color = as.character(pallete[attribute])
+    attribute = attribute / max(attribute)
+    attribute = round(attribute*1000)
+    pallete = colorRampPalette(c("white","darkred"), bias=0.5, interpolate='spline')(max(attribute)+1)
+    V(g)$color = as.character(pallete)[attribute+1]
   }    
   g
 }
@@ -300,7 +314,7 @@ add.author.participation.meta <- function(g, participation.id, author){
   n.document = data.frame(table(unique(conauth)$author))
   n.messages = data.frame(table(conauth$author))
   V(g)$author = V(g)$name
-  V(g)$n.documents = n.document[match(V(g)$name, n.document[,1]),2]
+  V(g)$n.domain = n.document[match(V(g)$name, n.document[,1]),2]
   V(g)$n.messages = n.messages[match(V(g)$name, n.messages[,1]),2]
   g
 }

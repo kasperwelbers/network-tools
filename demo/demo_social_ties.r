@@ -1,5 +1,5 @@
 d = data.frame(conversation=c(1,1,1,1,1,1,2,2,2,2),
-               author=c('Alice','Bob','Alice','Dave','Bob','Bob','Alice','Bob','Alice','Bob'),
+               author=c('Alice','Bob','Alice','Charlie','Bob','Bob','Alice','Bob','Alice','Bob'),
                order.nr=c(1,2,3,4,5,6,1,2,3,4))
 d
 

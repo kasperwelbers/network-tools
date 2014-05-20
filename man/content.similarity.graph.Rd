@@ -4,8 +4,8 @@
 \title{Create a content similarity graph}
 \usage{
 content.similarity.graph(m, vertex.grouping.vars,
-  similarity.measure = "cosine", topicscores.as.vertexmeta = NULL,
-  min.similarity = NULL)
+  similarity.measure = "cosine", min.similarity = NULL,
+  content.totals.as.vertexmeta = NULL, content.totals.relative = T)
 }
 \arguments{
 \item{m}{A (sparse) matrix where rows are documents (e.g., news articles, forum posts) and columns are content characteristics (e.g., terms, topics). Values represent the presence of content characteristics within documents. Examples are: a \code{\link{DocumentTermMatrix}} or the transposed $document_sums (topics by documents matrix) created with \code{\link{lda.collapsed.gibbs.sampler}}.}
@@ -14,9 +14,11 @@ content.similarity.graph(m, vertex.grouping.vars,
 
 \item{similarity.measure}{A character string giving a method for computing similarity. Options are: 'correlation', 'cosine','conditional_probability','overlap_count' and 'overlap_jacard'.}
 
-\item{topicscores.as.vertexmeta}{Can be used to include the topic values per node per topic. if 'all', all topics will be included. Can also be a numeric vector to select specific topics.}
-
 \item{min.similarity}{A numeric scalar representing the threshold for similarities. All ties with a value below min.similarity will be deleted. Can be used to reduce the size of large graphs with many weak ties.}
+
+\item{content.totals.as.vertexmeta}{Can be used to include the sum values per node per content characteristic. if 'all', all content characteristics will be included. Can also be a numeric vector to select specific content characteristics. The attribute names for content characteristics are C followed by the number (C1, C2, etc)}
+
+\item{content.totals.relative}{Logical. If content.totals.as.vertexmeta is used, use relative attention for content characteristic}
 }
 \value{
 A graph object in the \code{\link{igraph}} format
