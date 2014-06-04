@@ -3,7 +3,7 @@
 \alias{cast.sparse.matrix}
 \title{Cast data.frame to sparse matrix}
 \usage{
-cast.sparse.matrix(rows, columns, values = NULL)
+cast.sparse.matrix(rows, columns, values = NULL, agg.func = "sum")
 }
 \arguments{
 \item{rows}{a vector of row indices: [i,]}

@@ -9,7 +9,7 @@ The similarity of the content of documents can be expressed as graphs/networks. 
 
 In this howto we show several functions that can be used to create such similarity networks. The input consists of two objects: 
 
-- A matrix in which rows are documents, and columns are content characteristics (e.g., words, issues, topics). This can for instance be a DocumentTermMatrix (from the tm package), codings based on content-analysis, or based on the output of a topic model. Since this type of matrix is often very sparse, the functions in the package were specifically designed to handle sparse matrices efficiently.
+- A matrix in which rows are documents, and columns are content characteristics (e.g., words, issues, topics). This can for instance be a DocumentTermMatrix (from the tm package), codings based on content-analysis, or the output of a topic model. Since this type of matrix is often very sparse, the functions in the package were specifically designed to handle sparse matrices efficiently.
 - A data.frame (or vector) with document meta, such as document-id, author, source and date
 
 Creating the graph
@@ -68,7 +68,7 @@ Notable optional arguments are `similarity.measure` and `min.similarity`. With `
 
 
 ```r
-g = content.similarity.graph(m = document.topic.matrix, vertex.grouping.vars = list(party = meta$party, 
+g = similarity.graph(m = document.topic.matrix, vertex.grouping.vars = list(party = meta$party, 
     year = format(meta$date, "%Y")), similarity.measure = "correlation", min.similarity = 0)
 ```
 
@@ -81,17 +81,34 @@ Visualizing the graph
 
 Graph objects in the igraph format can directly be visualized as networks using the plot() function. Arguments for plotting can be given in the plot() function, but also assigned as graph.attributes, vertex.attributes and edge.attributes. For instance, to set the size of vertices, the `vertex.size` argument can be used as `plot(g, vertex.size=10)`. Similarly, the vertex size can be given as a vertex attribute with the same name: `V(g)$size = 10`. If the vertex.size argument is then ignored in plot, the value of this attribute is used. For an overview of plotting options in igraph, see: `igraph.org/r/doc/plot.common.html`.
 
-Several default plotting characteristics have already been assigned in the `content.similarity.graph` function. Before plotting, we'll first add some more. We offer the `graph.color.vertices` function, which is a convenient way to color vertices. The function accepts a factor or character class vector to color vertices as categories. This will be used here to color vertices based on the party. 
+Let's set some basic arguments. Here we set vertex size based on the number of speech acts (the number of cases that are aggregated in `similarity.graph` is given as the vertex attribute V(g)$n)
 
 
 ```r
-g = graph.color.vertices(g, V(g)$party)  # color vertices by party
+V(g)$size = sqrt(V(g)$n)  #set vertex size based on number of speech acts
+```
+
+
+Then we set the width of the edges based on the weight (the similarity score), and add the value as an edge label
+
+
+```r
+E(g)$width = E(g)$weight * 5
+E(g)$label = round(E(g)$weight, 2)
+```
+
+
+We offer the `graph.color.vertices` function, which is a convenient way to color vertices. The function accepts a factor or character class vector to color vertices as categories. This will be used here to color vertices based on the party. 
+
+
+```r
+g = graph.color.vertices(g, as.character(V(g)$party))  # color vertices by party
 ```
 
 ```
-##   attribute    color
-## 1       VVD    brown
-## 2       CDA darkgrey
+##   attribute      color
+## 1       VVD lightcoral
+## 2       CDA      green
 ```
 
 
@@ -110,7 +127,7 @@ Now we can visualize the network with the `plot` function.
 plot(g)
 ```
 
-![plot of chunk unnamed-chunk-6](figures_content_similarity_network/unnamed-chunk-6.png) 
+![plot of chunk unnamed-chunk-8](figures_content_similarity_network/unnamed-chunk-8.png) 
 
 
 From this network we can see that the strongest similarities are between the two parties within the same year, and that there are much weaker similarities between years, even within the same party.
@@ -122,7 +139,7 @@ Often it is usefull to filter a graph, such as deleting edges below a certain va
 graph.plot(g, min.edge = 0.1)
 ```
 
-![plot of chunk unnamed-chunk-7](figures_content_similarity_network/unnamed-chunk-7.png) 
+![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-9.png) 
 
 
 Finally, one might prefer to visualize/analyze the graph in other software, such as gephi. The `write.graph` function in the `igraph` package offers various ways to write graphs to specific formats.
@@ -153,29 +170,30 @@ dim(meta)  # meta data for the documents in document.topic.matrix.
 
 ```r
 
-g = content.similarity.graph(document.topic.matrix, vertex.grouping.vars = list(journal = meta$journal, 
+g = similarity.graph(document.topic.matrix, vertex.grouping.vars = list(journal = meta$journal, 
     period = meta$period), similarity.measure = "correlation", min.similarity = 0)
 
-g = graph.color.vertices(g, V(g)$journal)  # color vertices by journal
+g = graph.color.vertices(g, as.character(V(g)$journal))  # color vertices by journal
 ```
 
 ```
-##                                       attribute          color
-## 1                        COMMUNICATION RESEARCH         purple
-## 2                      JOURNAL OF COMMUNICATION    navajowhite
-## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS      violetred
-## 4                        PERSONAL RELATIONSHIPS      turquoise
-## 5                  HUMAN COMMUNICATION RESEARCH      slategrey
-## 6                           NEW MEDIA & SOCIETY          azure
-## 7                            JAVNOST-THE PUBLIC darkolivegreen
-## 8                       MEDIA CULTURE & SOCIETY   mediumorchid
-## 9                      COMMUNICATION MONOGRAPHS          black
-## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY            red
+##                                       attribute           color
+## 1                        COMMUNICATION RESEARCH   darkslategray
+## 2                      JOURNAL OF COMMUNICATION  lightslategray
+## 3  JOURNAL OF SOCIAL AND PERSONAL RELATIONSHIPS   darkslateblue
+## 4                        PERSONAL RELATIONSHIPS            plum
+## 5                  HUMAN COMMUNICATION RESEARCH       cadetblue
+## 6                           NEW MEDIA & SOCIETY       lightgrey
+## 7                            JAVNOST-THE PUBLIC mediumvioletred
+## 8                       MEDIA CULTURE & SOCIETY     lightsalmon
+## 9                      COMMUNICATION MONOGRAPHS      lightgreen
+## 10    JOURNALISM & MASS COMMUNICATION QUARTERLY          orange
 ```
 
 ```r
 V(g)$size = V(g)$n * 2  # use number of abstracts per node (year X journal) 
 V(g)$label = as.character(V(g)$journal)  # use journal as vertex name
+V(g)$label.cex = 0.7
 ```
 
 
@@ -186,17 +204,17 @@ In this example, we have used separate nodes for each journal X period combinati
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2001/2003")
 ```
 
-![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-91.png) 
+![plot of chunk unnamed-chunk-11](figures_content_similarity_network/unnamed-chunk-111.png) 
 
 ```r
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2004/2006")
 ```
 
-![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-92.png) 
+![plot of chunk unnamed-chunk-11](figures_content_similarity_network/unnamed-chunk-112.png) 
 
 ```r
 graph.plot(g, min.edge = 0.3, select.vertices = V(g)$period == "2007/2009")
 ```
 
-![plot of chunk unnamed-chunk-9](figures_content_similarity_network/unnamed-chunk-93.png) 
+![plot of chunk unnamed-chunk-11](figures_content_similarity_network/unnamed-chunk-113.png) 
 

@@ -35,7 +35,7 @@ The `content.similarity.graph` function has 2 required arguments. `m` is the mat
 Notable optional arguments are `similarity.measure` and `min.similarity`. With `similarity.measure` alternative methods to calculate the similarity between documents can be chosen. With `min.similarity` a threshold can be given for the edges/ties in the graph.
 
 ```{r, message=F}
-g = content.similarity.graph(m=document.topic.matrix, 
+g = similarity.graph(m=document.topic.matrix, 
                              vertex.grouping.vars=list(party=meta$party, 
                                                        year=format(meta$date, '%Y')), 
                              similarity.measure='correlation',
@@ -50,10 +50,23 @@ Visualizing the graph
 
 Graph objects in the igraph format can directly be visualized as networks using the plot() function. Arguments for plotting can be given in the plot() function, but also assigned as graph.attributes, vertex.attributes and edge.attributes. For instance, to set the size of vertices, the `vertex.size` argument can be used as `plot(g, vertex.size=10)`. Similarly, the vertex size can be given as a vertex attribute with the same name: `V(g)$size = 10`. If the vertex.size argument is then ignored in plot, the value of this attribute is used. For an overview of plotting options in igraph, see: `igraph.org/r/doc/plot.common.html`.
 
-Several default plotting characteristics have already been assigned in the `content.similarity.graph` function. Before plotting, we'll first add some more. We offer the `graph.color.vertices` function, which is a convenient way to color vertices. The function accepts a factor or character class vector to color vertices as categories. This will be used here to color vertices based on the party. 
+Let's set some basic arguments. Here we set vertex size based on the number of speech acts (the number of cases that are aggregated in `similarity.graph` is given as the vertex attribute V(g)$n)
 
 ```{r, message=F}
-g = graph.color.vertices(g, V(g)$party) # color vertices by party
+V(g)$size = sqrt(V(g)$n) #set vertex size based on number of speech acts
+```
+
+Then we set the width of the edges based on the weight (the similarity score), and add the value as an edge label
+
+```{r, message=F}
+E(g)$width = E(g)$weight*5
+E(g)$label = round(E(g)$weight, 2)
+```
+
+We offer the `graph.color.vertices` function, which is a convenient way to color vertices. The function accepts a factor or character class vector to color vertices as categories. This will be used here to color vertices based on the party. 
+
+```{r, message=F}
+g = graph.color.vertices(g, as.character(V(g)$party)) # color vertices by party
 ```
 
 We also add the years as vertex labels.
@@ -89,11 +102,12 @@ load('../demo/abstracts_socialnet.rdata')
 dim(document.topic.matrix) # A sparse matrix of documents X topics (in this case a sample of the results from a topic model (LDA) over 848 abstracts, with 25 topics)
 dim(meta) # meta data for the documents in document.topic.matrix. 
 
-g = content.similarity.graph(document.topic.matrix, vertex.grouping.vars=list(journal=meta$journal, period=meta$period), similarity.measure='correlation', min.similarity=0)
+g = similarity.graph(document.topic.matrix, vertex.grouping.vars=list(journal=meta$journal, period=meta$period), similarity.measure='correlation', min.similarity=0)
 
-g = graph.color.vertices(g, V(g)$journal) # color vertices by journal
+g = graph.color.vertices(g, as.character(V(g)$journal)) # color vertices by journal
 V(g)$size = V(g)$n*2 # use number of abstracts per node (year X journal) 
 V(g)$label = as.character(V(g)$journal) # use journal as vertex name
+V(g)$label.cex = 0.7
 ```
 
 In this example, we have used separate nodes for each journal X period combination. We can now plot different plots for each period

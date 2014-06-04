@@ -1,0 +1,117 @@
+```{r, include=FALSE}
+opts_chunk$set(fig.path = "figures_networks_in_igraph/")
+```
+
+Networks in R using Igraph
+========================================================
+
+In the networktools package we mainly use the igraph package for working with networks. This is a basic introduction to using igraph.
+
+```{r, message=FALSE}
+library(igraph)
+```
+
+Igraph offers several 'famous' graphs, which we can play with.
+```{r, message=FALSE}
+?graph.famous
+```
+
+The 'Zachary' graph is a social network of friendships between 34 members of a karate club at a US university in the 1970's. 
+```{r, message=FALSE}
+g = graph.famous('Zachary')
+```
+
+g is now a graph object in the igraph format. Graphs consist of nodes, or vertices, which are connected with ties, or edges. In igraph the terminology vertices and edges is used.
+
+Accordingly, graph objects contain two types of data: vertices and edges
+```{r, message=FALSE}
+V(g) # this shows the 34 vertices (V for vertices)
+head(E(g)) # shows the 78 edges (E for edges). The numbers match the vertices. (only 6 edges shown due to using head())
+```
+
+Both vertices and edges can also have attributes. For instance, since the vertices in g represent people, it can be usefull to know the gender, age, etc. of each person. The vertex.attributes() function gives a list of all vertex attributes for a given graph object.
+
+```{r, message=FALSE}
+vertex.attributes(g) # this gives a list of all vertex attributes. Currently it's empty (for this network we only know that each vertex is a person)
+```
+
+Since there are currently no vertex attributes, let's add one for reference. We'll randomly add gender (feminist theory not intended). After using the V function to select the vertices of the graph object, we can add vertex attributes similar to how we work with lists or data.frames.
+
+```{r, message=FALSE}
+V(g)$male = sample(c(0,1), length(V(g)), replace=T) # randomly pick 0 or 1, for as many times as there are vertices
+vertex.attributes(g)
+V(g)$male
+```
+
+A common edge attribute is weight (i.e. how strong is the tie). Edge attributes can be listed with the edge.attributes() function, and accessed with the E function. 
+
+```{r, message=F}
+edge.attributes(g) # this gives a list of all edge attributes. Currently also empty (every edge only represents, dichotomously, that there is an edge)
+```
+
+For reference, let's also randomly add a value for the strenght of the friendship.
+
+```{r, message=F}
+E(g)$friendship = sample(1:10, length(E(g)), replace=T) # randomly pick a number from 1 to 10, for as many times as the number of edges
+edge.attributes(g)
+```
+
+Also note that edges can be 'undirected' or 'directed'. An undirected edge means that two nodes are symmetrically connected. A directed edge means that the relation of vertex 1 to vertex 2 can be different from the relation of vertex 2 to vertex 1. In the edge sequence of g we can see that edges are undirected (notated with dashes: 2 -- 1), and not directed (notated with arrows: 2 -> 1). 
+
+Now for the more fun part: visualizing!
+graphs in the Igraph format can simply be visualized as networks with the plot function
+
+```{r, message=F}
+plot(g)
+```
+
+Fun, but still a bit messy. Off course, there are many choices to be made to plot a network. A prominent choice is the type of algorithm used to determine the location of the vertices. This is called the layout, which can be passed directly to the plot function.
+
+```{r, message=F}
+?layout # (go for 'General coordinates for plotting graph', for the igraph package)
+```
+
+```{r, message=F}
+plot(g, layout=layout.circle)
+plot(g, layout=layout.fruchterman.reingold)
+```
+
+For more information of more pretty plotting, we can also change attributes such as the colors, sizes and labels of vertices, or the weight, width and labels of edges. All can be directly passed to the plot function.
+
+```{r, message=F}
+plot(g, vertex.size=5, vertex.label='', vertex.color='orange', edge.width=0.5, edge.color='black')
+```
+
+A list of more attributes to change can be found here:
+```{r, message=F}
+?igraph.plotting
+```
+
+A convenient feature is that we can also pass these arguments by including them as vertex and edge attributes. We then add these attributes with the same names as the arguments passed to the plot function, but excluding the 'vertex.' and 'edge.' prefixes.
+
+```{r, message=F}
+V(g)$size = 4
+V(g)$label = ''
+V(g)$color = 'red'
+E(g)$width = 2
+E(g)$color = 'grey'
+
+plot(g)
+```
+
+Note that these attributes are now assigned equally to every vertex and edge
+
+```{r, message=T}
+vertex.attributes(g)
+edge.attributes(g)
+```
+
+Accordingly, we can also use existing vertex and edge attributes to set these attributes. For example, we can use gender to set the colors of nodes and the value for friendship strength to set the width of the edges.
+
+```{r, message=T}
+V(g)$color = 'blue'
+V(g)$color[V(g)$male == 1] = 'red'
+E(g)$width = sqrt(E(g)$friendship)
+
+plot(g)
+```

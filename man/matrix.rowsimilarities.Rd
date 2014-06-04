@@ -3,7 +3,7 @@
 \alias{matrix.rowsimilarities}
 \title{Calculates the similarity between rows of a matrix}
 \usage{
-matrix.rowsimilarities(mat, similarity.measure, output.as = "matrix",
+matrix.rowsimilarities(mat, similarity.measure, as.graph = F,
   min.similarity = NULL, decimals = 3)
 }
 \arguments{
@@ -11,7 +11,7 @@ matrix.rowsimilarities(mat, similarity.measure, output.as = "matrix",
 
 \item{similarity.measure}{A character string giving a method for computing similarity. Options are: 'correlation', 'cosine','conditional_probability','coincidence_count' and 'overlap_jacard'.}
 
-\item{output}{A character string indicating whether output should be a 'matrix' or a 'graph'. The graph is directed if assymetrical similarity measures are used ('conditional_probability' or 'overlap_jacard')}
+\item{as.graph}{A character string indicating whether output should be a 'graph' (instead of a matrix). The graph is directed if assymetrical similarity measures are used ('conditional_probability' or 'overlap_jacard')}
 }
 \value{
 An adjacency matrix or graph object

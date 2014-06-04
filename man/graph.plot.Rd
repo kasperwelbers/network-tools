@@ -3,9 +3,9 @@
 \alias{graph.plot}
 \title{A wrapper for plotting graphs}
 \usage{
-graph.plot(g, min.edge = NULL, max.edge = NULL, delete.vertices = NULL,
-  select.vertices = NULL, min.degree = NULL, use.tkplot = FALSE,
-  return.graph = FALSE)
+graph.plot(g, edge.weight = NULL, min.edge = NULL, max.edge = NULL,
+  delete.vertices = NULL, select.vertices = NULL, min.degree = NULL,
+  use.tkplot = FALSE, ego = NULL, return.graph = FALSE)
 }
 \arguments{
 \item{g}{A graph object in the \code{\link{igraph}} format}

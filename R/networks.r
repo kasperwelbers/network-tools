@@ -10,12 +10,12 @@
 #' @param values a vector of the values for each (non-zero) cell: [i,j] = value
 #' @return a sparse matrix of the dgTMatrix class (\code{\link{Matrix}} package) 
 #' @export
-cast.sparse.matrix <- function(rows, columns, values=NULL) {
+cast.sparse.matrix <- function(rows, columns, values=NULL, agg.func='sum') {
   if(is.null(values)) values = rep(1, length(rows))
   d = data.frame(rows=rows, columns=columns, values=values)
   if(nrow(d) > nrow(unique(d[,c('rows','columns')]))){
-    message('(Duplicate row-column matches occured. Values of duplicates are added up)')
-    d = aggregate(values ~ rows + columns, d, FUN='sum')
+    message(paste('(Aggregating duplicate row-column matches. agg.func =', agg.func))
+    d = aggregate(values ~ rows + columns, d, FUN=agg.func)
   }
   unit_index = unique(d$rows)
   char_index = unique(d$columns)
@@ -33,10 +33,10 @@ cast.sparse.matrix <- function(rows, columns, values=NULL) {
 #' 
 #' @param matrix A matrix object, which can be a sparse matrix. 
 #' @param similarity.measure A character string giving a method for computing similarity. Options are: 'correlation', 'cosine','conditional_probability','coincidence_count' and 'overlap_jacard'. 
-#' @param output A character string indicating whether output should be a 'matrix' or a 'graph'. The graph is directed if assymetrical similarity measures are used ('conditional_probability' or 'overlap_jacard') 
+#' @param as.graph A character string indicating whether output should be a 'graph' (instead of a matrix). The graph is directed if assymetrical similarity measures are used ('conditional_probability' or 'overlap_jacard') 
 #' @return An adjacency matrix or graph object 
 #' @export
-matrix.rowsimilarities <- function(mat, similarity.measure, output.as='matrix', min.similarity=NULL, decimals=3){
+matrix.rowsimilarities <- function(mat, similarity.measure, as.graph=F, min.similarity=NULL, decimals=3){
   if(similarity.measure=='correlation') output = matrix.correlation(t(mat))
   if(similarity.measure=='cosine') output = matrix.cosine(t(mat))
   if(similarity.measure=='conditional_probability') output=matrix.conprob(t(mat))
@@ -45,7 +45,7 @@ matrix.rowsimilarities <- function(mat, similarity.measure, output.as='matrix', 
   
   if(!is.null(min.similarity)) output[which(output < min.similarity)] = 0
   mat = round(mat, decimals)
-  if(output.as == 'graph') {
+  if(as.graph==T) {
     if(similarity.measure %in% c('overlap_jacard','conditional_probability')) edge.type = 'directed' else edge.type = 'undirected'
     colnames(output) = rownames(output) = rownames(mat)
     output = graph.adjacency(as.matrix(output), mode=edge.type, weighted=TRUE, diag=FALSE) 
@@ -104,6 +104,7 @@ matrix.cosine <- function(mat){
   cp / crossprod(t(diag(sqrt(cp))))
 }
 
+
 #' Compute conditional probability for matrix columns
 #' 
 #' Computes the conditional probability for all columns of a matrix
@@ -158,26 +159,17 @@ matrix.aggregate <- function(mat, grouping.vars, FUN='sum'){
 #' @export
 content.similarity.graph <- function(m, vertex.grouping.vars, similarity.measure='cosine', min.similarity=NULL, content.totals.as.vertexmeta=NULL, content.totals.relative=T){
   matlist = matrix.aggregate(m, vertex.grouping.vars)
-  g = matrix.rowsimilarities(matlist$matrix, similarity.measure, output='graph', min.similarity)
+  g = matrix.rowsimilarities(matlist$matrix, similarity.measure, as.graph=T, min.similarity)
   
   #if(!is.null(min.similarity)) g = delete.edges(g, which(E(g)$weight < min.similarity))
   E(g)$similarity = E(g)$weight
   
   matlist$vars$values_sum = rowSums(matlist$matrix) 
-  if(!is.null(content.totals.as.vertexmeta)) matlist$vars = cbind(matlist$vars, get.content.totals(matlist$matrix, content.totals.as.vertexmeta, content.totals.relative))
+  if(!is.null(content.totals.as.vertexmeta)) matlist$vars = cbind(matlist$vars, get.attribute.totals(matlist$matrix, content.totals.as.vertexmeta, content.totals.relative))
  
   vertex.attributes(g) = as.list(matlist$vars)
   g = default.graph.attributes(g)
   g
-}
-
-get.content.totals <- function(mat, content.totals.as.vertexmeta, content.totals.relative){
-  mat = as.matrix(mat)
-  colnames(mat) = paste('C', 1:ncol(mat),sep='')
-  if(content.totals.relative==T) mat = mat / rowSums(mat)
-  if(class(content.totals.as.vertexmeta) %in% c('integer','numeric')) mat = mat[,content.totals.as.vertexmeta, drop=F]
-  if(content.totals.as.vertexmeta[1] == 'all') mat = mat
-  mat
 }
 
 #' Sets basic default values for content.similarity.graph
@@ -195,6 +187,143 @@ default.graph.attributes <- function(g){
   E(g)$weight = E(g)$similarity
   E(g)$width = E(g)$weight*10
   g
+}
+
+#' Create a graph based on similarites of vertices/nodes
+#' 
+#' Makes a graph (in the \code{\link{igraph}} format) in which ties represent similarities between nodes, based on a matrix in which rows are cases (e.g., documents, authors, organizations), and columns are attributes of these cases (e.g., terms, authored-documents, countries). 
+#' Vertices (i.e. nodes) are defined as unique combinations of vertex.grouping.vars. If vertices cover multiple documents (e.g., authors of several documents) then content characteristics are first aggregated.
+#' The (aggregated) content characteristics are used to calculate the similarities between vertices, for which various similarity measures can be used.
+#' 
+#' @param m A (sparse) matrix where rows represent cases and columns represent attributes. Similarities are calculated between cases based on their scores on attributes. For example, if rows are documents, and columns are terms (e.g., a \code{\link{DocumentTermMatrix}}), then the similarities between documents are calculated based on their terms. Or, if rows are authors and columns are documents, then similarity between authors is calculated based on what documents they co-authored. 
+#' @param vertex.grouping.vars Vectors of the same length and order as the rows of m, representing vertex/node characteristics. Each unique combination of characteristics will be considered a vertex. In the graph object these characteristics are stored as vertex attributes.
+#' @param similarity.measure A character string giving a method for computing similarity. Options (currently) are: 'correlation', 'cosine','conditional_probability','overlap_count' and 'overlap_jacard'. 
+#' @param min.similarity A numeric scalar representing the threshold for similarities. All ties with a value below min.similarity will be deleted. Can be used to reduce the size of large graphs with many weak ties. 
+#' @param attributes.as.vertexmeta Can be used to include the sum of values of attributes for each vertex as vertex meta. if 'all', all attributes will be included. Can also be a numeric vector to select specific attributes. If m has row names, these are used to name the attributes. Otherwise, they are labeled 'att' followed by the number (att1, att2, etc)
+#' @param attributes.relative Logical. If attributes.as.vertexmeta is used, should the summed attribute scores per vertex be made relative to all attribute scores of the vertex? 
+#' @return A graph object in the \code{\link{igraph}} format
+#' @export
+similarity.graph <- function(m, vertex.grouping.vars, similarity.measure='cosine', min.similarity=NULL, attributes.as.vertexmeta=NULL, attributes.relative=T){
+  matlist = matrix.aggregate(m, vertex.grouping.vars)
+  g = matrix.rowsimilarities(matlist$matrix, similarity.measure, as.graph=T, min.similarity)
+  
+  matlist$vars$values_sum = rowSums(matlist$matrix) 
+  if(!is.null(attributes.as.vertexmeta)) matlist$vars = cbind(matlist$vars, get.attribute.totals(matlist$matrix, attributes.as.vertexmeta, attributes.relative))
+  
+  vertex.attributes(g) = as.list(matlist$vars)
+  g
+}
+
+get.attribute.totals <- function(mat, attributes.as.vertexmeta, attributes.relative){
+  mat = as.matrix(mat)
+  colnames(mat) = paste('att', 1:ncol(mat),sep='')
+  if(attributes.relative==T) mat = mat / rowSums(mat)
+  if(class(attributes.as.vertexmeta) %in% c('integer','numeric')) mat = mat[,attributes.as.vertexmeta, drop=F]
+  if(attributes.as.vertexmeta[1] == 'all') mat = mat
+  mat
+}
+
+#' Calculate adjacency of units
+#' 
+#' Calculate the adjacency (or coincidence) of units based on the contexts in which the units occured, and optionally a value for how often they occured in this context. 
+#' Various measures for calculating the adjacency/similarity are possible. Output is returned either as an adjacency matrix or as a graph in the \code{\link{igraph}} format.
+#'   
+#' @param unit.vars Vectors representing the units. Can be a single vector or multiple vectors (as a data.frame or list). Units are then defined as unique combinations of vectors (e.g., first and last name of a person)
+#' @param context A vector representing the context in which the units occured. For instance, conversations in which they participated or communities they are members of.
+#' @param values Optional, a numerical vector with values for how often a unit occured in the context. 
+#' @param measure The measure for adjacency that is used. Use 'coincidence_count' to get the number of context in which units co-occured. To take into account how many times units co-occured in the same context, 'cosine' is advised.
+#' @param as.graph Logical. If TRUE, the output is returned as a graph. Otherwise output is a list containing the adjacency matrix and vectors representing its rows/columns
+#' @return Either a list containing the adjacency matrix and vectors representing the rows/columns, or a graph (if as.graph == T)
+#' @export
+adjacency <- function(unit.vars, context, values=NULL, measure='coincidence_count', as.graph=FALSE){
+  row.vars = data.frame(unit.vars)
+  col.vars = data.frame(context)
+  row.index = match(apply(row.vars, 1, list), apply(unique(row.vars), 1, list)) 
+  col.index = match(apply(col.vars, 1, list), apply(unique(col.vars), 1, list)) 
+  mat = cast.sparse.matrix(rows=row.index, columns=col.index, values=values)
+  
+  if(as.graph == TRUE) {
+    g = matrix.rowsimilarities(mat, measure, TRUE, min.similarity=NULL, decimals=3)
+    vertex.attributes(g) = as.list(unique(row.vars))
+    g
+  } else {
+    mat = matrix.rowsimilarities(mat, measure, FALSE, min.similarity=NULL, decimals=3)
+    list(matrix=mat, dim.vars=unique(row.vars))
+  }
+}
+
+location.matrix <- function(location, shift.by, context=NULL, value=NULL){
+  if(is.list(context) | is.data.frame(context)) context = match(apply(data.frame(context), 1, list), apply(unique(data.frame(context)), 1, list))
+  i = 1:length(location)
+  if(is.null(value)) value = rep(1, length(location))
+  if(is.null(context)){
+    columns = unique(location)
+    col.index = match(location-1, columns)
+  } else {
+    columns = unique(apply(cbind(context, location), 1, list))
+    col.index = match(apply(cbind(context, location+shift.by), 1, list), columns)
+  }
+  index = data.frame(i=i, j=col.index, value=value)
+  index = index[!is.na(index[,2]),]
+  spMatrix(nrow=max(i), ncol=length(columns), i=index$i, j=index$j, index$value) 
+}
+
+
+location.window.matrix <- function(location, context, window.size, value=NULL, window.shape=NULL, two.sided=F){
+  if(is.null(value)) value = rep(1, window.size-1)
+  window.index = data.frame(shift.by=1:(window.size-1), value=value)
+  if(two.sided==T) window.index = rbind(window.index, data.frame(shift.by=-(window.size-1):-1, value=value))
+  mat = location.matrix(location, 0, context)
+  if(!is.null(window.shape)){
+    ### hippe functies om de window te wegen (exp decay)
+  }
+  if(nrow(window.index > 0)) for(i in 1:nrow(window.index)) mat = mat + location.matrix(location, window.index$shift.by[i], context, window.index$value[i])
+  mat
+}
+
+#' Calculate adjacency of units within moving windows
+#' 
+#' Calculate the adjacency (or coincidence) of units within moving windows over the order in which they occur. For instance, the adjacency of words in a given word distance or actors within converstations in a given distance of messages.
+#' Additionally, the context in which the units occured can be given. For instance, the documents in which words occur or the converstations in which messages occur.
+#' Optionally, the order of units can also be used to indicate the direction in which units co-occur. For instance, only counting how often an actor responded to another actor in a conversation.
+#'   
+#' @param unit.vars Vectors representing the units. Can be a single vector or multiple vectors (as a data.frame or list). Units are then defined as unique combinations of vectors (e.g., first and last name of a person)
+#' @param order A numerical vector indicating the order in which units occured (within each context) 
+#' @param context A vector representing the context in which the units occured. 
+#' @param window.size A numerical scalar indicating the size of the moving window. The default (and minimum) is 2, which means that only units directly next to each other are counted. 
+#' @param count.double Logical. If TRUE, multiple occurence of the same unit within a window are summed. If FALSE, units are only counted once. 
+#' @param direction A character string. If 'undirected', the co-occurence of units in windows is counted. If 'up', it is counted how often a unit occured after other units in windows. if 'down', it is counted how often a unit occured before other units (simply the inverse of 'up')
+#' @param as.graph Logical. If TRUE, the output is returned as a graph. Otherwise output is a list containing the adjacency matrix and vectors representing its rows/columns
+#' @return Either a list containing a (sparse) matrix and vector representing rows/columns, or a graph (if as.graph == T)
+#' @export
+windowed.adjacency <- function(unit.vars, order, context=NULL, window.size=2, count.once=F, direction='undirected', as.graph=FALSE){
+  mat = location.matrix(order, 0, context)
+  if(direction=='undirected') two.sided=T else two.sided=F
+  mat.lag = location.window.matrix(order, context, window.size,two.sided=two.sided)
+  diag(mat.lag) = 0
+  matagg = matrix.aggregate(mat, unit.vars)
+  if(count.once==T) agg.func = 'max' else agg.func = 'sum'
+  mat.lagagg = matrix.aggregate(mat.lag, unit.vars, FUN=agg.func) 
+  adjmat = crossprod(t(matagg$matrix),t(mat.lagagg$matrix))
+  
+  if(direction == 'down') adjmat = t(adjmat)
+
+  if(as.graph == TRUE) {
+    g = graph.adjacency(adjmat, mode='directed', weighted=TRUE, diag=FALSE)
+    vertex.attributes(g) = as.list(matagg$vars)
+    E(g)$average.XY = E(g)$weight / V(g)$n[get.edgelist(g)[,1]]
+    E(g)$average.YX = E(g)$weight / V(g)$n[get.edgelist(g)[,2]]
+    g
+  } else list(matrix=adjmat, dim.vars=matagg$vars)
+}
+
+
+graph.as.dataframes <- function(g){
+  edgelist = get.edgelist(g)
+  e = data.frame(x=edgelist[,1], y=edgelist[,2]) 
+  e = cbind(e, data.frame(edge.attributes(g)))
+  v = data.frame(vertex.attributes(g))
+  list(edges=e, vertices=v)
 }
 
 
@@ -240,7 +369,15 @@ graph.color.vertices <- function(g, attribute, pallete=NULL){
 #' @param return.graph Logical. If TRUE, the function will return the (filtered) graph object 
 #' @return if return.graph is TRUE, A graph object in the \code{\link{igraph}} format
 #' @export
-graph.plot <- function(g, min.edge=NULL, max.edge=NULL, delete.vertices=NULL, select.vertices=NULL, min.degree=NULL, use.tkplot=FALSE, return.graph=FALSE){ 
+graph.plot <- function(g, edge.weight=NULL, min.edge=NULL, max.edge=NULL, delete.vertices=NULL, select.vertices=NULL, min.degree=NULL, use.tkplot=FALSE, ego=NULL, return.graph=FALSE){ 
+  if(!is.null(edge.weight)) {
+    E(g)$weight = edge.weight
+    E(g)$width = edge.weight*3
+  }
+  if(!is.null(ego)){
+    if(class(ego) == 'logical') ego = which(ego)
+    g = delete.edges(g, which(!get.edgelist(g)[,1] %in% ego & !get.edgelist(g)[,2] %in% ego))
+  } 
   if(!is.null(min.edge)) g=delete.edges(g, which(E(g)$weight < min.edge))
   if(!is.null(max.edge)) g=delete.edges(g, which(E(g)$weight > max.edge))
   if(!is.null(delete.vertices)){
@@ -284,7 +421,11 @@ strsplit.to.rows <- function(x, id=NULL, split_by=';', ...){
 }
 
 
-#' Create a graph from conversation data
+
+########### OBSOLETE #############
+
+
+#' Create a coincidence graph 
 #' 
 #' Create a graph from conversation data
 #'   
@@ -302,7 +443,7 @@ strsplit.to.rows <- function(x, id=NULL, split_by=';', ...){
 #' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
 #' g = author.coincidence.graph(d$conversation, d$author, 'cosine') # Cosine can be used to also take into account how many times each author participated within conversations
 #' plot(g, edge.label=E(g)$weight, vertex.size=V(g)$n.messages*15)
-author.coincidence.graph <- function(participation.id, author, similarity.measure='coincidence_count'){  
+coincidence.graph <- function(participation.id, author, similarity.measure='coincidence_count'){  
   m = cast.sparse.matrix(author, participation.id)
   g = matrix.rowsimilarities(m, similarity.measure=similarity.measure, output.as='graph') 
   g = add.author.participation.meta(g, participation.id, author)
@@ -314,7 +455,7 @@ add.author.participation.meta <- function(g, participation.id, author){
   n.document = data.frame(table(unique(conauth)$author))
   n.messages = data.frame(table(conauth$author))
   V(g)$author = V(g)$name
-  V(g)$n.domain = n.document[match(V(g)$name, n.document[,1]),2]
+  V(g)$n.context = n.document[match(V(g)$name, n.document[,1]),2]
   V(g)$n.messages = n.messages[match(V(g)$name, n.messages[,1]),2]
   g
 }
